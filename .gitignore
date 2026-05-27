@@ -1,0 +1,27 @@
+.env
+run.py
+
+# notebook, archive
+# archive/
+notebook/
+prompts/
+local_experiments/
+experiments/
+local_data/
+# data/
+# score/
+dpo
+dpo_experiments/
+
+
+# Byte-compiled
+__pycache__/
+.latex-build/
+_pdf_text/
+pdf_text_output/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# IPython
+profile_default/

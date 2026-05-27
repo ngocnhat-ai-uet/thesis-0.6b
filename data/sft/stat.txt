@@ -1,0 +1,32 @@
+=== DATASET STATISTICS ===
+
+[Chosen Group (9670 rows)]
+  Definition: is_correct == 1 and finish_reason == "stop"
+  Difficulty:
+    0: 1
+    1: 11
+    2: 643
+    3: 3377
+    4: 4344
+    5: 1246
+    6: 29
+    7: 16
+    8: 2
+    9: 1
+  train_token mean: 1456.28
+
+
+[Reject Group (330 rows)]
+  Definition: not (is_correct == 1 and finish_reason == "stop")
+  Breakdown:
+    incorrect_length: 81
+    incorrect_stop: 231
+    correct_length: 18
+  difficulty:
+    2: 9
+    3: 98
+    4: 174
+    5: 48
+    6: 1
+  train_token mean: 1550.62
+

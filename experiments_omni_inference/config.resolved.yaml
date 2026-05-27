@@ -1,0 +1,41 @@
+job_type: infer
+experiment_id: TN01_base_inference
+run_id: tn01_qwen3_0.6b_base_omni_le2000_detailmethod_pv1
+output_root: experiments
+dataset:
+  name: omni
+  data_path: data/train/omni_dataset_le2000.parquet
+  hint_path: data/train/omni_hints_le2000.parquet
+  template: configs/chat_template/chat_template.jinja
+prompt:
+  condition: detailmethod
+  prompt_version: pv1
+inference:
+  enable_chunked_prefill: true
+  seed: 9
+  gpu_memory_utilization: 0.9
+  temperature: 0.1
+  top_k: 20
+  top_p: 0.9
+  min_p: 0.0
+  presence_penalty: 0.0
+  enable_thinking: true
+  trust_remote_code: true
+  enforce_eager: false
+  attention_backend: null
+  max_model_len: 8192
+  max_new_tokens: 8192
+  batch_size: 512
+models:
+  student: Qwen/Qwen3-0.6B
+{
+  "run_id": "tn01_qwen3_0.6b_base_omni_le2000_detailmethod_pv1", 
+  "index": "88102ca196d9a6fb", 
+  "question": "Calculate: $-x(3-x)=$____.", 
+  "hint": "Use the distributive property to multiply -x by each term in (3 - x).\n\nTrack signs carefully when multiplying by the negative term -x.\n\nCombine the resulting terms into a single polynomial in standard form.", 
+  "label": "x^2 - 3x", 
+  "model_output": "<think>\nOkay, let's see. I need to calculate -x multiplied by (3 - x). Hmm, the hint says to use the distributive property, which I remember is like distributing the negative sign to each term inside the parentheses. So, first, I should multiply -x by 3 and then by -x. Let me write that down.\n\nStarting with -x * 3. That should be -3x. Then, -x * (-x). Wait, multiplying a negative by another negative gives a positive. So that part should be x². So combining those two results, -3x and x², I need to arrange them in standard form. Standard form is usually descending powers of x, so x² - 3x. Let me check if I did that right.\n\nYes, multiplying -x by each term gives -3x and x². Combining them gives x² - 3x. So the answer should be x squared minus 3x. Let me make sure I didn't mix up any signs. The original expression is -x(3 - x). Distributing the -x, so yes, that's correct. No mistakes here. I think that's it. So the final answer is x² - 3x.\n</think>\n\nTo calculate $-x(3 - x)$, we apply the distributive property by multiplying $-x$ with each term inside the parentheses:\n\n$$\n-x(3 - x) = -x \\cdot 3 + (-x) \\cdot (-x)\n$$\n\nThis simplifies to:\n\n$$\n-3x + x^2\n$$\n\nCombining the terms into a single polynomial in standard form gives:\n\n$$\nx^2 - 3x\n$$\n\n$$\n\\boxed{x^2 - 3x}\n$$", 
+  "output_token_length": 375, 
+  "input_text": "<|im_start|>system\nYou are a careful mathematical reasoning assistant. Before responding, reason in <think>...</think>. Use it to understand the task, identify relevant constraints, reason logically, verify key steps, and correct mistakes when found. Then respond clearly and follow the user's instructions.<|im_end|>\n<|im_start|>user\nPut the final answer inside \\boxed{}. Calculate: $-x(3-x)=$____.\n\nHint: Use the distributive property to multiply -x by each term in (3 - x).\n\nTrack signs carefully when multiplying by the negative term -x.\n\nCombine the resulting terms into a single polynomial in standard form.<|im_end|>\n<|im_start|>assistant\n", 
+  "finish_reason": "stop"
+}

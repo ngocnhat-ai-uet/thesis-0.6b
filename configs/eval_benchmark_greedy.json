@@ -1,0 +1,28 @@
+{
+  "run_id": "benchmark_0.6b_sft_easy",
+  "output_root": "score",
+  "dataset": {
+    "name": "benchmark_hard",
+    "data_path": "data/test/benchmark_hard.jsonl"
+  },
+  "inference": {
+    "enable_chunked_prefill": true,
+    "seed": 9,
+    "gpu_memory_utilization": 0.9,
+    "temperature": 0.0,
+    "top_p": 1,
+    "min_p": 0.0,
+    "presence_penalty": 0.0,
+    "enable_thinking": true,
+    "trust_remote_code": true,
+    "enforce_eager": false,
+    "attention_backend": null,
+    "max_model_len": null,
+    "max_new_tokens": 16384,
+    "batch_size": 1024
+  },
+  "models": {
+    "student": "Qwen/Qwen3-0.6B",
+    "revision": null
+  }
+}

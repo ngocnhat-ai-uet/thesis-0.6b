@@ -1,0 +1,40 @@
+Prediction: experiments\TN01_base_inference\runs\tn01_qwen3_0.6b_base_omni_le2000_detailmethod_pv1\prediction.jsonl
+Total rows: 10000
+Incorrect rows: 312
+Incorrect by finish_reason:
+  stop: 231
+  length: 81
+
+Overall statistic:
+  count: 312
+  avg output_token: 3245.03
+  q1: 788.75
+  q2: 1391.50
+  q3: 7930.50
+
+finish_reason=length: 81
+  avg output_token: 7985.68
+  q1: 7964.00
+  q2: 7986.00
+  q3: 8007.00
+  - match reason = can_not_extract: 76
+    think_type:
+      unclosed_think: 76
+  - match reason = no_match: 5
+    - last_box_source = thought: 5
+      think_type:
+        unclosed_think: 4
+        reasoning_think: 1
+
+finish_reason=stop: 231
+  avg output_token: 1582.72
+  q1: 698.00
+  q2: 966.00
+  q3: 1946.00
+  - match reason = no_match: 231
+    - last_box_source = solution: 230
+      think_type:
+        reasoning_think: 230
+    - last_box_source = thought: 1
+      think_type:
+        unclosed_think: 1
