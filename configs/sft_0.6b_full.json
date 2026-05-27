@@ -5,7 +5,7 @@
   "output_root": "experiments",
   "dataset": {
     "labeled_path": "data/sft/le2000_full.json",
-    "system_prompt": "You are a careful mathematical reasoning assistant. Before responding, reason in <think>...</think>. Use it to understand the task, identify relevant constraints, reason logically, verify key steps, and correct mistakes when found. Then respond clearly and follow the user's instructions.",
+    "system_prompt": "Please reason step by step, and put your final answer within \\boxed{}.",
     "seed": 9
   },
   "models": {
