@@ -1,38 +1,69 @@
 import json
 import argparse
 import logging
-import csv
 from pathlib import Path
-
+import yaml
 import torch
 from datasets import load_dataset
 from transformers import AutoModelForCausalLM, AutoTokenizer, TrainerCallback
 from trl import SFTTrainer, SFTConfig
 
+SYSTEM_PROMPT_MODE_NONE = "none"
+SYSTEM_PROMPT_MODE_SYSTEM = "system"
+SYSTEM_PROMPT_MODE_USER = "user"
+VALID_SYSTEM_PROMPT_MODES = {
+    SYSTEM_PROMPT_MODE_NONE,
+    SYSTEM_PROMPT_MODE_SYSTEM,
+    SYSTEM_PROMPT_MODE_USER,
+}
 
-def build_messages(example, default_system_prompt=None, include_assistant=True):
-    system_prompt = example.get("system") or default_system_prompt
+def build_messages(
+    example,
+    default_system_prompt=None,
+    include_assistant=True,
+    system_prompt_mode=SYSTEM_PROMPT_MODE_SYSTEM,
+):
+    instruction = example["instruction"]
+    system_prompt = default_system_prompt
     messages = []
-    if system_prompt:
-        messages.append({"role": "system", "content": system_prompt})
 
-    messages.append({"role": "user", "content": example["instruction"]})
+    if system_prompt_mode == SYSTEM_PROMPT_MODE_SYSTEM and system_prompt:
+        messages.append({"role": "system", "content": system_prompt})
+    elif system_prompt_mode == SYSTEM_PROMPT_MODE_USER and system_prompt:
+        instruction = f"{instruction}\n{system_prompt}"
+
+    messages.append({"role": "user", "content": instruction})
     if include_assistant:
         messages.append({"role": "assistant", "content": example["output"]})
 
     return messages
 
 
-def make_tokenize_func(tokenizer, max_length, default_system_prompt=None):
+def make_tokenize_func(
+    tokenizer,
+    max_length,
+    default_system_prompt=None,
+    system_prompt_mode=SYSTEM_PROMPT_MODE_SYSTEM,
+):
     def tokenize_func(example):
         try:
             prompt_text = tokenizer.apply_chat_template(
-                build_messages(example, default_system_prompt, include_assistant=False),
+                build_messages(
+                    example,
+                    default_system_prompt,
+                    include_assistant=False,
+                    system_prompt_mode=system_prompt_mode,
+                ),
                 tokenize=False,
                 add_generation_prompt=True,
             )
             full_text = tokenizer.apply_chat_template(
-                build_messages(example, default_system_prompt, include_assistant=True),
+                build_messages(
+                    example,
+                    default_system_prompt,
+                    include_assistant=True,
+                    system_prompt_mode=system_prompt_mode,
+                ),
                 tokenize=False,
                 add_generation_prompt=False,
             )
@@ -61,8 +92,6 @@ def write_resolved_config(config, output_dir):
     output_path.mkdir(parents=True, exist_ok=True)
     resolved_path = output_path / "config.resolved.yaml"
     try:
-        import yaml
-
         with open(resolved_path, "w", encoding="utf-8") as file:
             yaml.safe_dump(config, file, sort_keys=False, allow_unicode=True)
     except Exception:
@@ -82,22 +111,10 @@ def resolve_output_dir(config):
 
 
 class MetricsHistoryCallback(TrainerCallback):
-    CSV_FIELDS = [
-        "step",
-        "epoch",
-        "loss",
-        "train_loss",
-        "mean_token_accuracy",
-        "learning_rate",
-        "grad_norm",
-        "num_tokens",
-    ]
-
     def __init__(self, output_dir):
         output_path = Path(output_dir)
         output_path.mkdir(parents=True, exist_ok=True)
         self.jsonl_path = output_path / "train_metrics_history.jsonl"
-        self.csv_path = output_path / "train_metrics_history.csv"
 
     def on_log(self, args, state, control, logs=None, **kwargs):
         if not state.is_world_process_zero or not logs:
@@ -116,13 +133,6 @@ class MetricsHistoryCallback(TrainerCallback):
 
         with open(self.jsonl_path, "a", encoding="utf-8") as file:
             file.write(json.dumps(record, ensure_ascii=False) + "\n")
-
-        csv_exists = self.csv_path.exists() and self.csv_path.stat().st_size > 0
-        with open(self.csv_path, "a", encoding="utf-8", newline="") as file:
-            writer = csv.DictWriter(file, fieldnames=self.CSV_FIELDS)
-            if not csv_exists:
-                writer.writeheader()
-            writer.writerow(record)
 
 
 def train(config):
@@ -145,6 +155,14 @@ def train(config):
 
     if student_tokenizer.chat_template is None:
         raise ValueError("Student tokenizer has no chat_template; cannot use apply_chat_template.")
+
+    system_prompt_mode = config["dataset"].get("system_prompt_mode", SYSTEM_PROMPT_MODE_SYSTEM)
+    if system_prompt_mode not in VALID_SYSTEM_PROMPT_MODES:
+        valid_modes = ", ".join(sorted(VALID_SYSTEM_PROMPT_MODES))
+        raise ValueError(
+            f"Invalid dataset.system_prompt_mode={system_prompt_mode!r}. "
+            f"Valid values: {valid_modes}"
+        )
 
     system_prompt = config["dataset"].get("system_prompt")
     resolve_output_dir(config)
@@ -170,7 +188,12 @@ def train(config):
         dataset["train"] = dataset["train"].select(range(min(limit, len(dataset["train"]))))
 
     train_dataset = dataset["train"].map(
-        make_tokenize_func(student_tokenizer, training_arguments.max_length, system_prompt),
+        make_tokenize_func(
+            student_tokenizer,
+            training_arguments.max_length,
+            system_prompt,
+            system_prompt_mode,
+        ),
         remove_columns=dataset["train"].column_names,
     )
     trainer = SFTTrainer(
