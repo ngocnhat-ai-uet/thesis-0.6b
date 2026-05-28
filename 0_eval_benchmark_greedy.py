@@ -14,7 +14,6 @@ from vllm import LLM, SamplingParams
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
 CONFIG_PATH = Path("configs/eval_benchmark_greedy.json")
-MAX_NEW_TOKENS = 16384
 SYSTEM_PROMPT_MODE_NONE = "none"
 SYSTEM_PROMPT_MODE_SYSTEM = "system"
 SYSTEM_PROMPT_MODE_USER = "user"
@@ -23,7 +22,6 @@ VALID_SYSTEM_PROMPT_MODES = {
     SYSTEM_PROMPT_MODE_SYSTEM,
     SYSTEM_PROMPT_MODE_USER,
 }
-
 
 # Input: dataset_path (jsonl/parquet)
 # Output: list of dict
@@ -95,7 +93,6 @@ def build_messages(question, system_prompt=None, system_prompt_mode=SYSTEM_PROMP
 def load_config():
     with open(CONFIG_PATH, "r", encoding="utf-8") as file:
         config = json.load(file)
-    config.setdefault("inference", {})["max_new_tokens"] = MAX_NEW_TOKENS
     return config
 
 
@@ -158,7 +155,7 @@ def load_tokenizer_and_vllm(config):
 
 def render_inputs(records, config, tokenizer):
     dataset_config = config.setdefault("dataset", {})
-    system_prompt_mode = dataset_config.get("system_prompt_mode", SYSTEM_PROMPT_MODE_SYSTEM)
+    system_prompt_mode = dataset_config["system_prompt_mode"]
     if system_prompt_mode not in VALID_SYSTEM_PROMPT_MODES:
         valid_modes = ", ".join(sorted(VALID_SYSTEM_PROMPT_MODES))
         raise ValueError(
@@ -176,7 +173,7 @@ def render_inputs(records, config, tokenizer):
             messages,
             tokenize=False,
             add_generation_prompt=True,
-            enable_thinking=config["inference"].get("enable_thinking", True),
+            enable_thinking=config["inference"]["enable_thinking"],
         )
         rendered.append(
             {
@@ -192,7 +189,7 @@ def render_inputs(records, config, tokenizer):
 
 def prepare_run_dir(config):
     run_id = config["run_id"]
-    root_dir = Path(config.get("output_root", "score"))
+    root_dir = Path(config["output_root"])
     run_dir = root_dir / run_id
     run_dir.mkdir(parents=True, exist_ok=True)
     return run_dir
@@ -216,15 +213,15 @@ def build_sampling_params(config):
     return SamplingParams(
         n=1,
         # top_k=config["inference"].get("top_k", 1),
-        top_p=config["inference"].get("top_p", 1.0),
-        min_p=config["inference"].get("min_p", 0.0),
+        top_p=config["inference"]["top_p"],
+        min_p=config["inference"]["min_p"],
         temperature=config["inference"]["temperature"],
-        presence_penalty=config["inference"].get("presence_penalty", 0.0),
+        presence_penalty=config["inference"]["presence_penalty"],
         seed=config["inference"]["seed"],
         skip_special_tokens=False,
         ignore_eos=False,
-        max_tokens=MAX_NEW_TOKENS,
-        stop=["<|im_end|>"]
+        max_tokens=config["inference"]["max_new_tokens"],
+        stop="<|im_end|>"
     )
 
 
@@ -244,10 +241,10 @@ def generate(config):
     run_dir = prepare_run_dir(config)
     write_resolved_config(config, run_dir)
     generations_path = run_dir / "generations.jsonl"
-    batch_size = config["inference"].get("batch_size", 32)
+    batch_size = config["inference"]["batch_size"]
     sampling_params = build_sampling_params(config)
 
-    logging.info("Starting benchmark generation with max_new_tokens=%d", MAX_NEW_TOKENS)
+    logging.info("Starting benchmark generation with max_new_tokens=%d", config["inference"]["max_new_tokens"])
     with open(generations_path, "w", encoding="utf-8") as output_file:
         for start in tqdm(range(0, len(rendered), batch_size), desc="Generating responses"):
             batch = rendered[start:start + batch_size]
