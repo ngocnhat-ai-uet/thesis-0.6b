@@ -154,7 +154,7 @@ def evaluate_file(
             row_run_id = matcher.to_text(row.get(run_id_field, ""))
             index = row.get(index_field, row_index)
 
-            result = matcher.match_answer(label, model_output, question)
+            result = matcher.match_answer(label, model_output, question, finish_reason=row.get("finish_reason"))
             prediction_row = _build_prediction_row(
                 row=row,
                 row_run_id=row_run_id,

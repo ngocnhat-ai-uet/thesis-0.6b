@@ -89,6 +89,11 @@ def _negative_extracted_answer(row: Dict[str, Any]) -> Any:
     return row.get("extracted_answer")
 
 
+def _has_human_check_answer(row: Dict[str, Any]) -> bool:
+    extracted_answer = _negative_extracted_answer(row)
+    return extracted_answer is not None and str(extracted_answer).strip() != ""
+
+
 def _markdown_nullable_cell(value: Any) -> str:
     if value is None:
         return "null"
@@ -281,14 +286,14 @@ def _build_metrics_markdown(
 def _build_negative_markdown(rows: list[Dict[str, Any]]) -> str:
     by_dataset: dict[str, list[Dict[str, Any]]] = defaultdict(list)
     for row in rows:
-        if not row["_is_correct"]:
+        if not row["_is_correct"] and _has_human_check_answer(row):
             by_dataset[row["dataset"]].append(row)
 
     total_negative = sum(len(items) for items in by_dataset.values())
     lines = [
         "# Negative Cases By Dataset",
         "",
-        f"- Total negative rows: {total_negative}",
+        f"- Total human-check negative rows: {total_negative}",
         "",
     ]
 
@@ -298,7 +303,7 @@ def _build_negative_markdown(rows: list[Dict[str, Any]]) -> str:
             [
                 f"## Dataset: {dataset}",
                 "",
-                f"- negative rows: {len(dataset_rows)}",
+                f"- human-check negative rows: {len(dataset_rows)}",
                 "",
                 "| dataset | index | label | extracted_answer |",
                 "| --- | ---: | --- | --- |",
@@ -313,7 +318,7 @@ def _build_negative_markdown(rows: list[Dict[str, Any]]) -> str:
         lines.append("")
 
     if total_negative == 0:
-        lines.append("No negative rows found.")
+        lines.append("No human-check negative rows found.")
         lines.append("")
     return "\n".join(lines).rstrip() + "\n"
 

@@ -8,23 +8,20 @@ I/O
    output_token_length, finish_reason, last_box_source, think_type.
 
 Extraction policy:
-- If the prediction contains a valid last `\\boxed{...}`, use its content as
-  extracted_answer.
-- If no valid `\\boxed{...}` exists, extracted_answer is the full solution text and
-  reason must be `can_not_extract`.
+- If finish_reason is `stop`, use the last valid `\\boxed{...}` in model_output.
+- If finish_reason is `length`, use the last valid `\\boxed{...}` before `</think>`.
+- If no policy-valid box exists, extracted_answer is null and reason is `can_not_extract`.
 
 last_box_source:
-- solution: last valid box is after `</think>`, or there is no think tag.
-- thought: last valid box is before `</think>`.
-- thought_no_close: last valid box is after `<think>` with no closing `</think>`.
-- none: no valid box can be extracted.
+- solution: valid box is after `</think>`, or there is no think close marker.
+- thought: valid box is before `</think>`.
+- none: no policy-valid box can be extracted.
 """
 
 from __future__ import annotations
 
 import argparse
 import json
-import re
 from pathlib import Path
 from typing import Any, Dict, Iterable
 
@@ -33,14 +30,11 @@ import matcher as matcher
 
 LAST_BOX_SOURCE_SOLUTION = "solution"
 LAST_BOX_SOURCE_THOUGHT = "thought"
-LAST_BOX_SOURCE_THOUGHT_NO_CLOSE = "thought_no_close"
 LAST_BOX_SOURCE_NONE = "none"
 
 THINK_TYPE_MISSING_THINK = "missing_think"
 THINK_TYPE_UNCLOSED_THINK = "unclosed_think"
-THINK_TYPE_SHORT_THINK = "short_think"
 THINK_TYPE_REASONING_THINK = "reasoning_think"
-THINK_SHORT_TEXT_THRESHOLD = 50
 
 THINK_OPEN = "<think>"
 THINK_CLOSE = "</think>"
@@ -60,58 +54,31 @@ def _iter_jsonl(path: Path) -> Iterable[Dict[str, Any]]:
                 raise ValueError(f"Invalid JSON at line {line_number}: {exc}") from exc
 
 
-def _thought_text_before_close(text: str) -> str:
-    close_idx = text.find(THINK_CLOSE)
-    before_close = text[:close_idx]
-    open_idx = before_close.rfind(THINK_OPEN)
-    if open_idx != -1:
-        return before_close[open_idx + len(THINK_OPEN) :]
-    return before_close
-
-
 def classify_think_type(text: Any) -> str:
     s = matcher.to_text(text)
     has_open = THINK_OPEN in s
     has_close = THINK_CLOSE in s
 
-    if not has_close:
-        if has_open:
-            return THINK_TYPE_UNCLOSED_THINK
-        return THINK_TYPE_MISSING_THINK
-
-    thought_text = _thought_text_before_close(s)
-    without_boxes = matcher.remove_valid_boxed_expressions(thought_text)
-    normalized_think_text = re.sub(r"[ \t\r\n]+", " ", without_boxes).strip()
-    if len(normalized_think_text) < THINK_SHORT_TEXT_THRESHOLD:
-        return THINK_TYPE_SHORT_THINK
-
-    return THINK_TYPE_REASONING_THINK
+    if has_close:
+        return THINK_TYPE_REASONING_THINK
+    if has_open:
+        return THINK_TYPE_UNCLOSED_THINK
+    return THINK_TYPE_MISSING_THINK
 
 
-def classify_last_box_source(text: Any) -> str:
+def classify_last_box_source(text: Any, finish_reason: Any = None) -> str:
     s = matcher.to_text(text)
-    answer = matcher.find_last_boxed_answer(s)
+    answer = matcher.find_policy_boxed_answer(s, finish_reason)
 
     if not answer.found or answer.start is None:
         return LAST_BOX_SOURCE_NONE
 
     close_idx = s.find(THINK_CLOSE)
-
-    # Case 1: Có </think>
-    if close_idx != -1:
-        if answer.start >= close_idx + len(THINK_CLOSE):
-            return LAST_BOX_SOURCE_SOLUTION
-        return LAST_BOX_SOURCE_THOUGHT
-
-    # Case 2: Không có </think>, nhưng có <think>
-    # Nếu box nằm sau <think>, coi là thought chưa đóng.
-    open_idx = s.rfind(THINK_OPEN)
-    if open_idx != -1 and answer.start >= open_idx + len(THINK_OPEN):
-        return LAST_BOX_SOURCE_THOUGHT
-
-    # Case 3: Không có thought marker hoặc box nằm ngoài thought.
-    # Theo quy ước của bạn: coi là solution.
-    return LAST_BOX_SOURCE_SOLUTION
+    if close_idx == -1:
+        return LAST_BOX_SOURCE_SOLUTION
+    if answer.start >= close_idx + len(THINK_CLOSE):
+        return LAST_BOX_SOURCE_SOLUTION
+    return LAST_BOX_SOURCE_THOUGHT
 
 
 def _build_prediction_row(
@@ -171,12 +138,12 @@ def evaluate_file(
             row_run_id = matcher.to_text(row.get(run_id_field, ""))
             index = row.get(index_field, row_index)
 
-            result = matcher.match_answer(gt, pred_text, question_text)
+            finish_reason = row.get("finish_reason")
+            result = matcher.match_answer(gt, pred_text, question_text, finish_reason=finish_reason)
 
             think_type = classify_think_type(pred_text)
-            last_box_source = classify_last_box_source(pred_text)
+            last_box_source = classify_last_box_source(pred_text, finish_reason)
             output_token_length = row.get("output_token_length")
-            finish_reason = row.get("finish_reason")
 
             prediction_row = _build_prediction_row(
                 row_run_id=row_run_id,

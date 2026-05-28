@@ -55,7 +55,7 @@ class BoxedAnswer:
 class MatchResult:
     matched: bool
     reason: str
-    extracted_answer: str
+    extracted_answer: Optional[str]
 
 
 def to_text(value: Any) -> str:
@@ -742,6 +742,24 @@ def find_last_boxed_answer(text: Any) -> BoxedAnswer:
     return answers[-1]
 
 
+def find_policy_boxed_answer(text: Any, finish_reason: Any = None) -> BoxedAnswer:
+    """Find the valid boxed answer according to generation finish_reason."""
+    full_text = to_text(text)
+    reason = to_text(finish_reason).strip().lower()
+
+    if reason == "length":
+        close_idx = full_text.find("</think>")
+        if close_idx == -1:
+            return BoxedAnswer(content="", found=False)
+
+        answers = _valid_boxed_answers(full_text[:close_idx])
+        if not answers:
+            return BoxedAnswer(content="", found=False)
+        return answers[-1]
+
+    return find_last_boxed_answer(full_text)
+
+
 def extract_boxed_answer(text: Any) -> Tuple[str, bool]:
     """
     Extract content from the last valid \\boxed{...}.
@@ -776,6 +794,7 @@ def match_answer(
     gt: str | int | float,
     pred_text: str | int | float,
     question_text: Any = None,
+    finish_reason: Any = None,
 ) -> MatchResult:
     """
     Match a model prediction against ground truth.
@@ -785,11 +804,11 @@ def match_answer(
     - If boxed answer exists, reason reflects the engine that matched.
     """
     gt_text = to_text(gt)
-    answer = find_last_boxed_answer(pred_text)
-    extracted_answer = answer.content
+    answer = find_policy_boxed_answer(pred_text, finish_reason)
+    extracted_answer = answer.content if answer.found else None
 
     if not answer.found:
-        return MatchResult(False, REASON_CAN_NOT_EXTRACT, extracted_answer)
+        return MatchResult(False, REASON_CAN_NOT_EXTRACT, None)
 
     gt_candidates = _answer_candidates(gt_text)
     pred_candidates = _answer_candidates(extracted_answer)
