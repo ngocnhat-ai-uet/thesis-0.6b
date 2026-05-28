@@ -31,3 +31,6 @@ python3 1_sft.py \
 
 find score -type f -name "generations.jsonl" -exec python3 eval/rule_eval.py --input {} \;
 find score -type f -name "prediction.jsonl" -exec sh -c 'python3 eval/benchmark_metrics.py --prediction "$1" --generations "$(dirname "$1")/generations.jsonl"' sh {} \;
+
+python3 2_dpo_infer.py --config configs/infer_dpo.json --num-samples 4 --seeds 1,2,3,4
+python3 2_dpo_infer.py --config configs/infer_dpo.json --seeds 1,2,3,4
