@@ -20,7 +20,7 @@ from vllm import LLM, SamplingParams
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
 DEFAULT_CONFIG_PATH = Path("configs/infer_dpo.json")
-DEFAULT_SYSTEM_PROMPT = r"Solve the math problem step by step. Put the final integer answer in \boxed{}."
+DEFAULT_SYSTEM_PROMPT = "Please reason step by step, and put your final answer within \\boxed{}."
 DEFAULT_NUM_SAMPLES = 8
 SEED_MIN = 0
 SEED_MAX = 2**31 - 1

@@ -11,7 +11,7 @@ from trl import DPOTrainer, DPOConfig
 import copy
 
 
-DEFAULT_SYSTEM_PROMPT = r"Solve the math problem step by step. Put the final integer answer in \boxed{}."
+DEFAULT_SYSTEM_PROMPT = "Please reason step by step, and put your final answer within \\boxed{}."
 SYSTEM_PROMPT_MODE_NONE = "none"
 SYSTEM_PROMPT_MODE_SYSTEM = "system"
 SYSTEM_PROMPT_MODE_USER = "user"

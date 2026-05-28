@@ -8,6 +8,7 @@ from datasets import load_dataset
 from transformers import AutoModelForCausalLM, AutoTokenizer, TrainerCallback
 from trl import SFTTrainer, SFTConfig
 
+DEFAULT_SYSTEM_PROMPT = "Please reason step by step, and put your final answer within \\boxed{}."
 SYSTEM_PROMPT_MODE_NONE = "none"
 SYSTEM_PROMPT_MODE_SYSTEM = "system"
 SYSTEM_PROMPT_MODE_USER = "user"
@@ -163,7 +164,7 @@ def train(config):
             f"Valid values: {valid_modes}"
         )
 
-    system_prompt = config["dataset"].get("system_prompt")
+    system_prompt = config["dataset"].get("system_prompt", DEFAULT_SYSTEM_PROMPT)
     resolve_output_dir(config)
 
     training_config = dict(config["training"])
