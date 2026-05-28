@@ -110,6 +110,14 @@ def resolve_output_dir(config):
     return config["training"]["output_dir"]
 
 
+def apply_cli_overrides(config, args):
+    if args.run_id:
+        config["run_id"] = args.run_id
+    if args.system_prompt_mode:
+        config.setdefault("dataset", {})["system_prompt_mode"] = args.system_prompt_mode
+    return config
+
+
 class MetricsHistoryCallback(TrainerCallback):
     def __init__(self, output_dir):
         output_path = Path(output_dir)
@@ -212,8 +220,15 @@ def train(config):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--config', type=str, required=True, help='path to the json config file')
+    parser.add_argument("--run-id", type=str, help="training run id")
+    parser.add_argument(
+        "--system-prompt-mode",
+        choices=sorted(VALID_SYSTEM_PROMPT_MODES),
+        help="override dataset.system_prompt_mode",
+    )
     args = parser.parse_args()
     config = json.load(open(args.config))
+    config = apply_cli_overrides(config, args)
     train(config)  
 
 

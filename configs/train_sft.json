@@ -2,7 +2,7 @@
   "run_id": "tn02_le2000_sft_full",
   "output_root": "sft_experiments",
   "dataset": {
-    "labeled_path": "data/sft/le2000_full.json",
+    "labeled_path": "data/sft/le2000.json",
     "system_prompt_mode": "system",
     "system_prompt": "Please reason step by step, and put your final answer within \\boxed{}.",
     "seed": 9
@@ -23,7 +23,7 @@
     "logging_steps": 1,
     "include_num_input_tokens_seen": true,
     "use_8bit_optimizer": true,
-    "learning_rate": 1e-5,
+    "learning_rate": 2e-5,
     "weight_decay": 0.05,
     "warmup_ratio": 0.1,
     "lr_scheduler_type": "cosine"

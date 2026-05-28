@@ -17,3 +17,13 @@ python3 0_eval_benchmark_greedy.py \
   --run-id benchmark_greedy_sft9670_trainprompt_usersuffix_max16384_evalprompt_usersuffix \
   --student Qwen/Qwen3-0.6B \
   --system-prompt-mode user
+
+python3 1_sft.py \
+  --config configs/train_sft.json \
+  --run-id sft9670_trainprompt_sys \
+  --system-prompt-mode system
+
+python3 1_sft.py \
+  --config configs/train_sft.json \
+  --run-id sft9670_trainprompt_usersufffix \
+  --system-prompt-mode user
