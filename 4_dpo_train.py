@@ -1,7 +1,6 @@
 import json
 import argparse
 import logging
-import csv
 from pathlib import Path
 
 import torch
@@ -144,24 +143,6 @@ def resolve_output_dir(config):
 
 
 class MetricsHistoryCallback(TrainerCallback):
-    CSV_FIELDS = [
-        "step",
-        "epoch",
-        "loss",
-        "train_loss",
-        "learning_rate",
-        "grad_norm",
-        "num_tokens",
-        "rewards_chosen",
-        "rewards_rejected",
-        "rewards_accuracies",
-        "rewards_margins",
-        "logps_chosen",
-        "logps_rejected",
-        "logits_chosen",
-        "logits_rejected",
-    ]
-
     LOG_KEY_MAP = {
         "rewards_chosen": "rewards/chosen",
         "rewards_rejected": "rewards/rejected",
@@ -177,7 +158,6 @@ class MetricsHistoryCallback(TrainerCallback):
         output_path = Path(output_dir)
         output_path.mkdir(parents=True, exist_ok=True)
         self.jsonl_path = output_path / "train_metrics_history.jsonl"
-        self.csv_path = output_path / "train_metrics_history.csv"
 
     def on_log(self, args, state, control, logs=None, **kwargs):
         if not state.is_world_process_zero or not logs:
@@ -197,13 +177,6 @@ class MetricsHistoryCallback(TrainerCallback):
 
         with open(self.jsonl_path, "a", encoding="utf-8") as file:
             file.write(json.dumps(record, ensure_ascii=False) + "\n")
-
-        csv_exists = self.csv_path.exists() and self.csv_path.stat().st_size > 0
-        with open(self.csv_path, "a", encoding="utf-8", newline="") as file:
-            writer = csv.DictWriter(file, fieldnames=self.CSV_FIELDS)
-            if not csv_exists:
-                writer.writeheader()
-            writer.writerow(record)
 
 
 def train(config):    

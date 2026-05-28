@@ -64,10 +64,6 @@ def counter_dict(counter: Counter[Any]) -> dict[str, int]:
     return {str(key): counter[key] for key in sorted(counter, key=lambda item: str(item))}
 
 
-def difficulty_distribution(rows: Iterable[dict[str, Any]]) -> dict[str, int]:
-    return counter_dict(Counter(value_label(row.get("difficulty")) for row in rows))
-
-
 def numeric_value(value: Any) -> float | None:
     if value is None:
         return None
@@ -232,7 +228,6 @@ def split_dataset(dataset_path: Path, prediction_path: Path, output_dir: Path) -
             split_name: {
                 "path": str(output_paths[split_name]),
                 "rows": output_counts[split_name],
-                "difficulty": difficulty_distribution(split_rows[split_name]),
             }
             for split_name in output_paths
         },

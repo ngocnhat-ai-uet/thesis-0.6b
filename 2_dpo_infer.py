@@ -243,7 +243,6 @@ def render_inputs(records: list[dict[str, Any]], config: dict[str, Any], tokeniz
         rendered.append(
             {
                 "index": get_index(record, index),
-                "difficulty": record.get("difficulty"),
                 "question": question,
                 "label": get_label(record),
                 "input_text": full_text,
@@ -273,6 +272,7 @@ def build_sampling_params(config: dict[str, Any], seed: int) -> SamplingParams:
     inference = config["inference"]
     return SamplingParams(
         n=1,
+        top_k=inference.get("top_k", 20),
         top_p=inference.get("top_p", 1.0),
         min_p=inference.get("min_p", 0.0),
         temperature=inference["temperature"],
@@ -307,7 +307,6 @@ def build_generation_row(
     return {
         "run_id": config["run_id"],
         "index": item["index"],
-        "difficulty": item["difficulty"],
         "sample_index": sample_index,
         "seed": format_seed(seed),
         "temperature": config["inference"]["temperature"],
