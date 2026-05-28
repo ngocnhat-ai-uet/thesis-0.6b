@@ -2,8 +2,8 @@
   "run_id": "benchmark_0.6b_sft_easy",
   "output_root": "score",
   "dataset": {
-    "name": "benchmark_hard",
-    "data_path": "data/test/benchmark_hard.jsonl",
+    "name": "benchmark_merged",
+    "data_path": "data/test/benchmark_merged.jsonl",
     "system_prompt_mode": "system",
     "system_prompt": "Please reason step by step, and put your final answer within \\boxed{}."
   },
@@ -16,9 +16,6 @@
     "min_p": 0.0,
     "presence_penalty": 0.0,
     "enable_thinking": true,
-    "trust_remote_code": true,
-    "enforce_eager": false,
-    "attention_backend": null,
     "max_model_len": null,
     "max_new_tokens": 16384,
     "batch_size": 1024

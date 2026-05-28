@@ -16,9 +16,6 @@
     "min_p": 0.0,
     "presence_penalty": 0.0,
     "enable_thinking": true,
-    "trust_remote_code": true,
-    "enforce_eager": false,
-    "attention_backend": null,
     "max_model_len": 2048,
     "max_new_tokens": 2048,
     "batch_size": 512

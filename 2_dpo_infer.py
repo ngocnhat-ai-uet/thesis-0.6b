@@ -5,7 +5,6 @@ from __future__ import annotations
 import argparse
 import json
 import logging
-import os
 import secrets
 from pathlib import Path
 from typing import Any
@@ -202,19 +201,14 @@ def load_tokenizer_and_vllm(config: dict[str, Any]):
     logging.info("tokenizer's eos_token_id: %s, pad_token_id: %s", tokenizer.eos_token_id, tokenizer.pad_token_id)
 
     inference = config["inference"]
-    attention_backend = inference.get("attention_backend")
-    if attention_backend:
-        os.environ["VLLM_ATTENTION_BACKEND"] = attention_backend
-        logging.info("Using vLLM attention backend: %s", attention_backend)
-
     llm_kwargs = dict(
         model=model_path,
         tensor_parallel_size=torch.cuda.device_count(),
         enable_chunked_prefill=inference["enable_chunked_prefill"],
         gpu_memory_utilization=inference["gpu_memory_utilization"],
-        trust_remote_code=inference["trust_remote_code"],
+        trust_remote_code=True,
         dtype=torch.bfloat16,
-        enforce_eager=inference["enforce_eager"],
+        enforce_eager=False,
         max_model_len=inference.get("max_model_len"),
     )
     if model_revision:

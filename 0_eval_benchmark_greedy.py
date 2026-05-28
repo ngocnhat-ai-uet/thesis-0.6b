@@ -1,7 +1,6 @@
 import argparse
 import json
 import logging
-import os
 from pathlib import Path
 
 import torch
@@ -103,6 +102,8 @@ def apply_cli_overrides(config, args):
         config.setdefault("models", {})["student"] = args.student
     if args.revision:
         config.setdefault("models", {})["revision"] = args.revision
+    if args.system_prompt_mode:
+        config.setdefault("dataset", {})["system_prompt_mode"] = args.system_prompt_mode
     return config
 
 
@@ -131,19 +132,14 @@ def load_tokenizer_and_vllm(config):
     logging.info(f"tokenizer's eos_token_id: {tokenizer.eos_token_id}, pad_token_id: {tokenizer.pad_token_id}")
 
     num_gpus = torch.cuda.device_count()
-    attention_backend = config["inference"].get("attention_backend")
-    if attention_backend:
-        os.environ["VLLM_ATTENTION_BACKEND"] = attention_backend
-        logging.info(f"Using vLLM attention backend: {attention_backend}")
-
     llm_kwargs = dict(
         model=model_path,
         tensor_parallel_size=num_gpus,
         enable_chunked_prefill=config["inference"]["enable_chunked_prefill"],
         gpu_memory_utilization=config["inference"]["gpu_memory_utilization"],
-        trust_remote_code=config["inference"]["trust_remote_code"],
+        trust_remote_code=True,
         dtype=torch.bfloat16,
-        enforce_eager=config["inference"]["enforce_eager"],
+        enforce_eager=False,
         max_model_len=config["inference"]["max_model_len"],
     )
     if model_revision:
@@ -273,6 +269,11 @@ def main():
     parser.add_argument("--run-id", type=str, help="benchmark run id")
     parser.add_argument("--student", type=str, help="student model path")
     parser.add_argument("--revision", type=str, help="model/tokenizer revision")
+    parser.add_argument(
+        "--system-prompt-mode",
+        choices=sorted(VALID_SYSTEM_PROMPT_MODES),
+        help="override dataset.system_prompt_mode",
+    )
     args = parser.parse_args()
 
     config = load_config()
