@@ -24,6 +24,14 @@ DEFAULT_SYSTEM_PROMPT = r"Solve the math problem step by step. Put the final int
 DEFAULT_NUM_SAMPLES = 8
 SEED_MIN = 0
 SEED_MAX = 2**31 - 1
+SYSTEM_PROMPT_MODE_NONE = "none"
+SYSTEM_PROMPT_MODE_SYSTEM = "system"
+SYSTEM_PROMPT_MODE_USER = "user"
+VALID_SYSTEM_PROMPT_MODES = {
+    SYSTEM_PROMPT_MODE_NONE,
+    SYSTEM_PROMPT_MODE_SYSTEM,
+    SYSTEM_PROMPT_MODE_USER,
+}
 
 
 def load_records(dataset_config: dict[str, Any]) -> list[dict[str, Any]]:
@@ -69,6 +77,27 @@ def get_index(record: dict[str, Any], fallback_index: int) -> Any:
 
 def get_label(record: dict[str, Any]) -> Any:
     return record.get("answer", record.get("final_answer", record.get("label")))
+
+
+def build_prompt_text(question: str) -> str:
+    return f"{question}"
+
+
+def build_messages(
+    question: str,
+    system_prompt: str | None = None,
+    system_prompt_mode: str = SYSTEM_PROMPT_MODE_SYSTEM,
+) -> list[dict[str, str]]:
+    user_text = build_prompt_text(question)
+    messages = []
+
+    if system_prompt_mode == SYSTEM_PROMPT_MODE_SYSTEM and system_prompt:
+        messages.append({"role": "system", "content": system_prompt})
+    elif system_prompt_mode == SYSTEM_PROMPT_MODE_USER and system_prompt:
+        user_text = f"{user_text}\n{system_prompt}"
+
+    messages.append({"role": "user", "content": user_text})
+    return messages
 
 
 def load_config(config_path: Path) -> dict[str, Any]:
@@ -198,13 +227,19 @@ def load_tokenizer_and_vllm(config: dict[str, Any]):
 
 def render_inputs(records: list[dict[str, Any]], config: dict[str, Any], tokenizer: Any) -> list[dict[str, Any]]:
     rendered = []
-    system_prompt = config.get("system_prompt") or config.get("dataset", {}).get("system_prompt") or DEFAULT_SYSTEM_PROMPT
+    dataset_config = config.setdefault("dataset", {})
+    system_prompt_mode = dataset_config.get("system_prompt_mode", SYSTEM_PROMPT_MODE_SYSTEM)
+    if system_prompt_mode not in VALID_SYSTEM_PROMPT_MODES:
+        valid_modes = ", ".join(sorted(VALID_SYSTEM_PROMPT_MODES))
+        raise ValueError(
+            f"Invalid dataset.system_prompt_mode={system_prompt_mode!r}. "
+            f"Valid values: {valid_modes}"
+        )
+    system_prompt = config.get("system_prompt") or dataset_config.get("system_prompt") or DEFAULT_SYSTEM_PROMPT
+
     for index, record in enumerate(records):
         question = get_question(record)
-        messages = [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": question},
-        ]
+        messages = build_messages(question, system_prompt, system_prompt_mode)
         full_text = tokenizer.apply_chat_template(
             messages,
             tokenize=False,

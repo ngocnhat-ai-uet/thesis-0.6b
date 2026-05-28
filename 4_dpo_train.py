@@ -135,7 +135,7 @@ def write_resolved_config(config, output_dir):
 
 def resolve_output_dir(config):
     if "run_id" not in config:
-        return config["training"]["output_dir"]
+        raise ValueError("Missing required top-level config key: run_id")
 
     root_dir = Path(config.get("output_root", "dpo_experiments"))
     output_dir = root_dir / config["run_id"]

@@ -1,8 +1,6 @@
 {
-  "job_type": "sft",
-  "experiment_id": "TN02_sft",
   "run_id": "tn02_le2000_sft_full",
-  "output_root": "experiments",
+  "output_root": "sft_experiments",
   "dataset": {
     "labeled_path": "data/sft/le2000_full.json",
     "system_prompt_mode": "system",
@@ -13,7 +11,6 @@
     "student": "Qwen/Qwen3-0.6B"
   },
   "training": {
-    "output_dir": "experiments/TN02_sft/runs/tn02_le2000_sft_full",
     "num_train_epochs": 3,
     "per_device_train_batch_size": 4,
     "gradient_accumulation_steps": 24,
