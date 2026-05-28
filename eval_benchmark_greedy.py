@@ -15,7 +15,15 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(
 
 CONFIG_PATH = Path("configs/eval_benchmark_greedy.json")
 MAX_NEW_TOKENS = 16384
-SYSTEM_PROMPT = r"Solve the math problem step by step. Put the final answer in \\boxed{}."
+DEFAULT_SYSTEM_PROMPT = r"Solve the math problem step by step. Put the final answer in \\boxed{}."
+SYSTEM_PROMPT_MODE_NONE = "none"
+SYSTEM_PROMPT_MODE_SYSTEM = "system"
+SYSTEM_PROMPT_MODE_USER = "user"
+VALID_SYSTEM_PROMPT_MODES = {
+    SYSTEM_PROMPT_MODE_NONE,
+    SYSTEM_PROMPT_MODE_SYSTEM,
+    SYSTEM_PROMPT_MODE_USER,
+}
 
 
 # Input: dataset_path (jsonl/parquet)
@@ -70,6 +78,19 @@ def get_dataset_name(record):
 
 def build_prompt_text(question):
     return f"{question}"
+
+
+def build_messages(question, system_prompt=None, system_prompt_mode=SYSTEM_PROMPT_MODE_SYSTEM):
+    user_text = build_prompt_text(question)
+    messages = []
+
+    if system_prompt_mode == SYSTEM_PROMPT_MODE_SYSTEM and system_prompt:
+        messages.append({"role": "system", "content": system_prompt})
+    elif system_prompt_mode == SYSTEM_PROMPT_MODE_USER and system_prompt:
+        user_text = f"{user_text}\n{system_prompt}"
+
+    messages.append({"role": "user", "content": user_text})
+    return messages
 
 
 def load_config():
@@ -137,15 +158,21 @@ def load_tokenizer_and_vllm(config):
 
 
 def render_inputs(records, config, tokenizer):
+    dataset_config = config.setdefault("dataset", {})
+    system_prompt_mode = dataset_config.get("system_prompt_mode", SYSTEM_PROMPT_MODE_SYSTEM)
+    if system_prompt_mode not in VALID_SYSTEM_PROMPT_MODES:
+        valid_modes = ", ".join(sorted(VALID_SYSTEM_PROMPT_MODES))
+        raise ValueError(
+            f"Invalid dataset.system_prompt_mode={system_prompt_mode!r}. "
+            f"Valid values: {valid_modes}"
+        )
+    system_prompt = dataset_config.get("system_prompt", DEFAULT_SYSTEM_PROMPT)
+
     rendered = []
     for index, record in enumerate(records):
         question = get_question(record)
         record_index = get_index(record, index)
-        prompt_text = build_prompt_text(question)
-        messages = [
-            {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user", "content": prompt_text},
-        ]
+        messages = build_messages(question, system_prompt, system_prompt_mode)
         full_text = tokenizer.apply_chat_template(
             messages,
             tokenize=False,

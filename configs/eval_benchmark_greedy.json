@@ -3,7 +3,9 @@
   "output_root": "score",
   "dataset": {
     "name": "benchmark_hard",
-    "data_path": "data/test/benchmark_hard.jsonl"
+    "data_path": "data/test/benchmark_hard.jsonl",
+    "system_prompt_mode": "system",
+    "system_prompt": "Solve the math problem step by step. Put the final answer in \\boxed{}."
   },
   "inference": {
     "enable_chunked_prefill": true,
