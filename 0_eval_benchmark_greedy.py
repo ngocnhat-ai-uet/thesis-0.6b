@@ -15,7 +15,6 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(
 
 CONFIG_PATH = Path("configs/eval_benchmark_greedy.json")
 MAX_NEW_TOKENS = 16384
-DEFAULT_SYSTEM_PROMPT = r"Solve the math problem step by step. Put the final answer in \\boxed{}."
 SYSTEM_PROMPT_MODE_NONE = "none"
 SYSTEM_PROMPT_MODE_SYSTEM = "system"
 SYSTEM_PROMPT_MODE_USER = "user"
@@ -166,7 +165,7 @@ def render_inputs(records, config, tokenizer):
             f"Invalid dataset.system_prompt_mode={system_prompt_mode!r}. "
             f"Valid values: {valid_modes}"
         )
-    system_prompt = dataset_config.get("system_prompt", DEFAULT_SYSTEM_PROMPT)
+    system_prompt = dataset_config.get("system_prompt")
 
     rendered = []
     for index, record in enumerate(records):

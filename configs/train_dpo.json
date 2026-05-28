@@ -6,7 +6,7 @@
     "labeled_path": "dpo_data/dpo_train/train_dpo11_qwen3_0.6b.json",
     "seed": 9,
     "system_prompt_mode": "system",
-    "system_prompt": "Solve the math problem step by step. Put the final integer answer in \\boxed{}."
+    "system_prompt": "Please reason step by step, and put your final integer answer within \\boxed{}."
   },
   "models": {
     "student": "Qwen/Qwen3-0.6B"
