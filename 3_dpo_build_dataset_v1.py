@@ -163,8 +163,8 @@ def prediction_key(row: dict[str, Any]) -> tuple[str, str, str, str]:
     )
 
 
-def has_nonempty_boxed_answer(text: Any) -> bool:
-    return any(answer.content.strip() for answer in matcher._valid_boxed_answers(text))
+def has_boxed_answer(text: Any) -> bool:
+    return bool(matcher._valid_boxed_answers(text))
 
 
 def extracted_last_boxed_answer(text: Any) -> str | None:
@@ -175,7 +175,7 @@ def extracted_last_boxed_answer(text: Any) -> str | None:
 
 
 def generation_score(label: Any, model_output: Any, question: Any = None) -> int:
-    if not has_nonempty_boxed_answer(model_output):
+    if not has_boxed_answer(model_output):
         return -1
     result = matcher.match_answer(label, model_output, question, finish_reason=None)
     return 1 if result.matched else 0
@@ -262,14 +262,8 @@ def token_stats(values: list[int]) -> dict[str, Any]:
     total = sum(sorted_values)
     return {
         "count": count,
-        "total": total,
-        "min": sorted_values[0] if sorted_values else None,
-        "max": sorted_values[-1] if sorted_values else None,
         "mean": round(total / count, 2) if count else None,
         "median": round(percentile(sorted_values, 50), 2) if count else None,
-        "p90": round(percentile(sorted_values, 90), 2) if count else None,
-        "p95": round(percentile(sorted_values, 95), 2) if count else None,
-        "p99": round(percentile(sorted_values, 99), 2) if count else None,
     }
 
 
@@ -279,9 +273,8 @@ def stats_path_for_output(output_path: Path) -> Path:
 
 def print_token_stats(name: str, stats: dict[str, Any]) -> None:
     print(
-        f"{name} tokens: count={stats['count']}, total={stats['total']}, "
-        f"mean={stats['mean']}, median={stats['median']}, min={stats['min']}, "
-        f"max={stats['max']}, p90={stats['p90']}, p95={stats['p95']}, p99={stats['p99']}"
+        f"{name} tokens: count={stats['count']}, "
+        f"mean={stats['mean']}, median={stats['median']}"
     )
 
 
@@ -301,6 +294,7 @@ def build_dpo_dataset(
     rejected_score_counts: Counter[int] = Counter()
     chosen_token_lengths: list[int] = []
     rejected_token_lengths: list[int] = []
+    both_under_2048_count = 0
     rng = secrets.SystemRandom()
 
     for record in dataset_rows:
@@ -372,6 +366,8 @@ def build_dpo_dataset(
         rejected_score_counts[rejected_vr_score] += 1
         chosen_token_lengths.append(chosen_token_length)
         rejected_token_lengths.append(rejected_token_length)
+        if chosen_token_length < 2048 and rejected_token_length < 2048:
+            both_under_2048_count += 1
         rejected_finish_reason = optional_text(rejected_prediction.get("finish_reason"))
         length_reject = rejected_finish_reason == "length"
         chosen_answer = optional_text(extracted_last_boxed_answer(chosen_generation.get("model_output")))
@@ -415,6 +411,7 @@ def build_dpo_dataset(
         "rejected_score_counts": {str(key): rejected_score_counts[key] for key in sorted(rejected_score_counts)},
         "chosen_tokens": chosen_stats,
         "rejected_tokens": rejected_stats,
+        "pairs_both_under_2048": both_under_2048_count,
     }
     write_yaml(stats_path, stats)
 
@@ -422,6 +419,7 @@ def build_dpo_dataset(
     print(f"Wrote stats to {stats_path}")
     print_token_stats("Chosen", chosen_stats)
     print_token_stats("Rejected", rejected_stats)
+    print(f"Pairs with chosen and rejected tokens < 2048: {both_under_2048_count}")
     if skip_reasons:
         print(f"Skipped: {dict(sorted(skip_reasons.items()))}")
 
