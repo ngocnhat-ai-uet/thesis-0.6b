@@ -4,6 +4,7 @@ run.py
 /score/
 sft_experiments/
 dpo_experiments/
+data/dapo/
 
 
 # Byte-compiled

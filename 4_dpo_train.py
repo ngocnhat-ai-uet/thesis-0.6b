@@ -231,6 +231,14 @@ def train(config):
         training_config["optim"] = "adamw_bnb_8bit"
 
     config["training"] = training_config
+    max_len = training_config.pop("max_len", None)
+    if max_len is not None:
+        training_config["max_length"] = max_len
+    training_config.pop("scheduler_specific_kwargs", None)
+    training_config["lr_scheduler_type"] = "cosine_with_min_lr"
+    training_config["lr_scheduler_kwargs"] = {
+        "min_lr": training_config["learning_rate"] * 0.1,
+    }
     training_arguments = DPOConfig(**training_config)
     write_resolved_config(config, training_arguments.output_dir)
 
