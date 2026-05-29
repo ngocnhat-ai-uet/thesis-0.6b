@@ -8,6 +8,7 @@ urllib3==2.5.0
 datasets==3.6.0
 transformers==4.57.6
 trl==0.17.0
+peft==0.19.1
 tokenizers==0.22.2
 # Tested on RTX 5090 / Blackwell with driver 570.x (CUDA 12.8).
 # Newer vLLM cu129/cu130 wheels can emit PTX unsupported by this driver.

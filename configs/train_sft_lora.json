@@ -1,0 +1,40 @@
+{
+  "run_id": "tn02_le2000_sft_full",
+  "output_root": "sft_experiments",
+  "dataset": {
+    "labeled_path": "data/sft/le2000.json",
+    "system_prompt_mode": "system",
+    "system_prompt": "Please reason step by step, and put your final answer within \\boxed{}.",
+    "seed": 9
+  },
+  "models": {
+    "student": "Qwen/Qwen3-0.6B"
+  },
+  "training": {
+    "num_train_epochs": 3,
+    "per_device_train_batch_size": 16,
+    "gradient_accumulation_steps": 4,
+    "gradient_checkpointing": true,
+    "max_length": 2048,
+    "dataset_kwargs": {
+      "skip_prepare_dataset": true
+    },
+    "save_strategy": "no",
+    "logging_steps": 1,
+    "include_num_input_tokens_seen": true,
+    "use_8bit_optimizer": true,
+    "learning_rate": 0.0002,
+    "weight_decay": 0.0,
+    "warmup_ratio": 0.1,
+    "lr_scheduler_type": "cosine"
+  },
+  "peft": {
+    "method": "lora",
+    "task_type": "CAUSAL_LM",
+    "r": 128,
+    "lora_alpha": 256,
+    "target_modules": "all-linear",
+    "lora_dropout": 0.0,
+    "bias": "none"
+  }
+}
