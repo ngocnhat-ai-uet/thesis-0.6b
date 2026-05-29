@@ -2,24 +2,25 @@
   "output_root": "dpo_experiments",
   "run_id": "train_dpo11_qwen3_0.6b",
   "dataset": {
-    "labeled_path": "dpo_data/dpo_train/train_dpo11_qwen3_0.6b.json",
+    "labeled_path": "data/dapo/train_dpo11_v1.json",
     "seed": 9,
     "system_prompt_mode": "system",
-    "system_prompt": "Please reason step by step, and put your final integer answer within \\boxed{}."
+    "system_prompt": "Please reason step by step, and put your final answer within \\boxed{}."
   },
   "models": {
     "student": "Qwen/Qwen3-0.6B"
   },
   "training": {
     "num_train_epochs": 1,
-    "per_device_train_batch_size": 4,
-    "gradient_accumulation_steps": 4,
+    "per_device_train_batch_size": 2,
+    "gradient_accumulation_steps": 32,
     "gradient_checkpointing": true,
     "save_strategy": "no",
     "logging_steps": 1,
     "use_8bit_optimizer": true,
     "beta": 0.1,
-    "max_len": 2048,
+    "max_prompt_length": 1024,
+    "max_len": 4096,
     "learning_rate": 5e-7,
     "weight_decay": 0.0,
     "warmup_ratio": 0.03,

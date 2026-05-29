@@ -272,7 +272,6 @@ def build_sampling_params(config: dict[str, Any], seed: int) -> SamplingParams:
     inference = config["inference"]
     return SamplingParams(
         n=1,
-        top_k=inference.get("top_k", 20),
         top_p=inference.get("top_p", 1.0),
         min_p=inference.get("min_p", 0.0),
         temperature=inference["temperature"],
