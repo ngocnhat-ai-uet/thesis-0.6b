@@ -38,3 +38,13 @@ find score -type f -name "prediction.jsonl" -exec sh -c 'python3 eval/benchmark_
 
 python3 2_dpo_infer.py --config configs/infer_dpo.json --num-samples 4 --seeds 1,2,3,4
 python3 2_dpo_infer.py --config configs/infer_dpo.json --seeds 1,2,3,4
+
+python3 merge_lora_checkpoint.py \
+  --checkpoint sft_experiments/sft9670_lora_r128_alllinear_trainprompt_sys/checkpoint-157 \
+  --output sft_experiments/sft9670_lora_r128_alllinear_trainprompt_sys/merged-checkpoint-157
+# Không cần chỉ rõ base-model, nó tự lấy base-model trong adapter_config.json
+
+python3 0_eval_benchmark_greedy.py \
+  --run-id benchmark_greedy_sft10000_lora_ep3_trainprompt_sys_max16384_evalprompt_sys \
+  --student sft_experiments/sft9670_lora_r128_alllinear_trainprompt_sys/merged-checkpoint-471 \
+  --system-prompt-mode system
