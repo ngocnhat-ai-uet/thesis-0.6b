@@ -260,10 +260,16 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--config', type=str, required=True, help='path to the json config file')
     parser.add_argument('--run-id', type=str, help='override run_id from the json config')
+    parser.add_argument('--data-path', type=str, help='override dataset.labeled_path from the json config')
+    parser.add_argument('--gradient-accumulation-steps', type=int, help='override training.gradient_accumulation_steps from the json config')
     args = parser.parse_args()
     config = json.load(open(args.config))
     if args.run_id:
         config["run_id"] = args.run_id
+    if args.data_path:
+        config.setdefault("dataset", {})["labeled_path"] = args.data_path
+    if args.gradient_accumulation_steps is not None:
+        config.setdefault("training", {})["gradient_accumulation_steps"] = args.gradient_accumulation_steps
     train(config)
 
 

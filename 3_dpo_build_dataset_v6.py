@@ -358,14 +358,10 @@ def build_dpo_dataset(
 
         positive_pairs = grouped_pairs[1]
         zero_pairs = grouped_pairs[0]
-        negative_pairs = grouped_pairs[-1]
 
         if positive_pairs:
             chosen_pair = rng.choice(positive_pairs)
             chosen_vr_score = 1
-        elif zero_pairs:
-            chosen_pair = longest_pair(zero_pairs)
-            chosen_vr_score = 0
         else:
             skip_reasons["missing_chosen"] += 1
             continue
@@ -376,12 +372,6 @@ def build_dpo_dataset(
             if zero_pairs:
                 rejected_pair = closest_length_pair(zero_pairs, pair_token_length(chosen_pair))
                 rejected_vr_score = 0
-            elif negative_pairs:
-                rejected_pair = rng.choice(negative_pairs)
-                rejected_vr_score = -1
-        elif chosen_vr_score == 0 and negative_pairs:
-            rejected_pair = rng.choice(negative_pairs)
-            rejected_vr_score = -1
 
         if rejected_pair is None or rejected_vr_score is None:
             skip_reasons["missing_rejected"] += 1

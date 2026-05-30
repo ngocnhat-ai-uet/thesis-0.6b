@@ -3,11 +3,13 @@ from __future__ import annotations
 
 import argparse
 import json
-import random
+import secrets
 import sys
 from collections import Counter, defaultdict
 from pathlib import Path
 from typing import Any, Iterable
+
+from transformers import AutoTokenizer
 
 REPO_ROOT = Path(__file__).resolve().parent
 EVAL_DIR = REPO_ROOT / "eval"
@@ -15,6 +17,8 @@ if str(EVAL_DIR) not in sys.path:
     sys.path.insert(0, str(EVAL_DIR))
 
 import matcher  # noqa: E402
+
+NEGATIVE_REJECTED_LENGTH_MULTIPLIER = 1.05
 
 
 def iter_jsonl(path: Path) -> Iterable[dict[str, Any]]:
@@ -202,6 +206,25 @@ def pair_length(pair: tuple[dict[str, Any], dict[str, Any]]) -> float:
     return float(pair_token_length(pair))
 
 
+def raw_output_token_ids(tokenizer: Any, text: str) -> list[int]:
+    return tokenizer(text, add_special_tokens=False)["input_ids"]
+
+
+def raw_output_token_length(tokenizer: Any, text: str) -> int:
+    return len(raw_output_token_ids(tokenizer, text))
+
+
+def truncate_raw_output_to_token_length(tokenizer: Any, text: str, token_length: int) -> str:
+    token_ids = raw_output_token_ids(tokenizer, text)
+    if len(token_ids) <= token_length:
+        return text
+    return tokenizer.decode(
+        token_ids[:token_length],
+        skip_special_tokens=False,
+        clean_up_tokenization_spaces=False,
+    )
+
+
 def longest_pair(
     pairs: list[tuple[dict[str, Any], dict[str, Any]]],
 ) -> tuple[dict[str, Any], dict[str, Any]]:
@@ -313,6 +336,7 @@ def build_dpo_dataset(
     prediction_path: Path,
     generations_path: Path,
     output_path: Path,
+    tokenizer: Any,
 ) -> None:
     dataset_rows = load_unique_dataset(dataset_path)
     predictions_by_index = load_predictions_by_index(prediction_path)
@@ -326,7 +350,7 @@ def build_dpo_dataset(
     chosen_token_lengths: list[int] = []
     rejected_token_lengths: list[int] = []
     both_under_2048_count = 0
-    rng = random.Random(9)
+    rng = secrets.SystemRandom()
 
     for record in dataset_rows:
         index = str(record["index"])
@@ -389,8 +413,17 @@ def build_dpo_dataset(
 
         chosen_prediction, chosen_generation = chosen_pair
         rejected_prediction, rejected_generation = rejected_pair
-        chosen_token_length = pair_token_length(chosen_pair)
-        rejected_token_length = pair_token_length(rejected_pair)
+        chosen_text = str(chosen_generation["model_output"])
+        rejected_text = str(rejected_generation["model_output"])
+        chosen_token_length = raw_output_token_length(tokenizer, chosen_text)
+        rejected_token_limit = int(chosen_token_length * NEGATIVE_REJECTED_LENGTH_MULTIPLIER)
+        if rejected_vr_score == -1:
+            rejected_text = truncate_raw_output_to_token_length(
+                tokenizer,
+                rejected_text,
+                rejected_token_limit,
+            )
+        rejected_token_length = raw_output_token_length(tokenizer, rejected_text)
         chosen_score_counts[chosen_vr_score] += 1
         rejected_score_counts[rejected_vr_score] += 1
         pair_score_counts[(chosen_vr_score, rejected_vr_score)] += 1
@@ -414,8 +447,8 @@ def build_dpo_dataset(
                 "wrong_answer": rejected_answer,
                 "length_reject": length_reject,
                 "prompt": prompt,
-                "chosen": str(chosen_generation["model_output"]),
-                "rejected": str(rejected_generation["model_output"]),
+                "chosen": chosen_text,
+                "rejected": rejected_text,
                 "chosen_vr_score": chosen_vr_score,
                 "rejected_vr_score": rejected_vr_score,
                 "chosen_sample_index": chosen_prediction.get("sample_index"),
@@ -468,13 +501,25 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--prediction", type=Path, required=True, help="prediction.jsonl")
     parser.add_argument("--generations", type=Path, required=True, help="generations.jsonl")
     parser.add_argument("--output", type=Path, required=True, help="output DPO JSON")
+    parser.add_argument(
+        "--tokenizer",
+        required=True,
+        help="tokenizer name or path used to measure and truncate raw outputs",
+    )
 
     return parser.parse_args()
 
 
 def main() -> None:
     args = parse_args()
-    build_dpo_dataset(args.dataset, args.prediction, args.generations, args.output)
+    tokenizer = AutoTokenizer.from_pretrained(args.tokenizer, trust_remote_code=True)
+    build_dpo_dataset(
+        args.dataset,
+        args.prediction,
+        args.generations,
+        args.output,
+        tokenizer,
+    )
 
 
 if __name__ == "__main__":

@@ -48,3 +48,18 @@ python3 0_eval_benchmark_greedy.py \
   --run-id benchmark_greedy_sft10000_lora_ep3_trainprompt_sys_max16384_evalprompt_sys \
   --student sft_experiments/sft9670_lora_r128_alllinear_trainprompt_sys/merged-checkpoint-471 \
   --system-prompt-mode system
+
+python3 4_dpo_train.py --config configs/train_dpo.json --run-id train_dpo11_v2_m4096 --data-path data/dapo/train_dpo11_v2.json && \
+python3 4_dpo_train.py --config configs/train_dpo.json --run-id train_dpo11_v3_m4096 --data-path data/dapo/train_dpo11_v3.json && \
+python3 4_dpo_train.py --config configs/train_dpo.json --run-id train_dpo11_v4_m4096 --data-path data/dapo/train_dpo11_v4.json && \
+python3 0_eval_benchmark_greedy.py --run-id benchmark_greedy_train_dpo11_v2_m4096 --student dpo_experiments/train_dpo11_v2_m4096 && \
+python3 0_eval_benchmark_greedy.py --run-id benchmark_greedy_train_dpo11_v3_m4096 --student dpo_experiments/train_dpo11_v3_m4096 && \
+python3 0_eval_benchmark_greedy.py --run-id benchmark_greedy_train_dpo11_v4_m4096 --student dpo_experiments/train_dpo11_v4_m4096
+
+python3 4_dpo_train.py --config configs/train_dpo.json --run-id train_dpo11_v6_m4096_b16 --data-path data/dapo/train_dpo11_v6.json --gradient-accumulation-steps 8 && \
+python3 4_dpo_train.py --config configs/train_dpo.json --run-id train_dpo11_v5_m4096 --data-path data/dapo/train_dpo11_v5.json --gradient-accumulation-steps 32 && \
+python3 0_eval_benchmark_greedy.py --run-id benchmark_greedy_train_dpo11_v6_m4096_b16 --student dpo_experiments/train_dpo11_v6_m4096_b16 && \
+python3 0_eval_benchmark_greedy.py --run-id benchmark_greedy_train_dpo11_v5_m4096 --student dpo_experiments/train_dpo11_v5_m4096 && \
+python3 0_eval_benchmark_greedy.py --run-id benchmark_greedy_train_dpo11_v4_m4096 --student dpo_experiments/train_dpo11_v4_m4096 && \
+python3 0_eval_benchmark_greedy.py --run-id benchmark_greedy_train_dpo11_v3_m4096 --student dpo_experiments/train_dpo11_v3_m4096 && \
+python3 0_eval_benchmark_greedy.py --run-id benchmark_greedy_train_dpo11_v2_m4096 --student dpo_experiments/train_dpo11_v2_m4096

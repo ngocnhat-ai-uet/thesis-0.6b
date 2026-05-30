@@ -5,7 +5,7 @@
     "labeled_path": "data/dapo/train_dpo11_v1.json",
     "seed": 9,
     "system_prompt_mode": "system",
-    "system_prompt": "Please reason step by step, and put your final answer within \\boxed{}."
+    "system_prompt": "Please reason step by step, and put your final integer answer within \\boxed{}."
   },
   "models": {
     "student": "Qwen/Qwen3-0.6B"

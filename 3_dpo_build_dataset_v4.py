@@ -361,7 +361,7 @@ def build_dpo_dataset(
         negative_pairs = grouped_pairs[-1]
 
         if positive_pairs:
-            chosen_pair = rng.choice(positive_pairs)
+            chosen_pair = longest_pair(positive_pairs)
             chosen_vr_score = 1
         elif zero_pairs:
             chosen_pair = longest_pair(zero_pairs)
