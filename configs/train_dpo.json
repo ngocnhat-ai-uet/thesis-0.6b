@@ -2,7 +2,7 @@
   "output_root": "dpo_experiments",
   "run_id": "train_dpo11_qwen3_0.6b",
   "dataset": {
-    "labeled_path": "data/dapo/train_dpo11_v1.json",
+    "labeled_path": "data/dapo/train_dpo11_v2.json",
     "seed": 9,
     "system_prompt_mode": "system",
     "system_prompt": "Please reason step by step, and put your final integer answer within \\boxed{}."
